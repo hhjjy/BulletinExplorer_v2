@@ -5,6 +5,22 @@ from urllib.parse import urlparse
 import json,os
 import psycopg2
 import traceback
+import time
+from datetime import datetime
+import os
+import json
+from telegram.ext import CommandHandler, CallbackQueryHandler, MessageHandler, Updater, Application, ContextTypes, filters, ChatMemberHandler
+from telegram import  Chat, ChatMember, ChatMemberUpdated, ForceReply, Update, Bot 
+import telegram
+import copy
+from decimal import Decimal
+from dotenv import load_dotenv
+from pydantic import BaseModel
+import pprint 
+import asyncio
+from telegram.constants import ParseMode
+
+
 db_config = {
     'dbname': 'mydb',
     'user': 'admin',
@@ -127,9 +143,10 @@ def save_bulletin_to_db(post):
                 VALUES (%s, %s, %s, %s)
             """, (post['publisher'], post['title'], post['url'], post['content']))
             connection.commit()
-            print( {"message": "Data inserted successfully"})
+            # print( {"message": "Data inserted successfully"})
         else:
-            print({"message": "Data already exists. No action taken."})
+            a = 0 
+            # print({"message": "Data already exists. No action taken."})
 
     except Exception as Error:
         error_message = "Error occurred: {}".format(str(Error))
@@ -143,9 +160,9 @@ def save_bulletin_to_db(post):
 def SaveBulletin(data):
     for row in data:
         result = save_bulletin_to_db(row)
-        print(result)
+        # print(result)
 
-def scrape():
+def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
     #should add running event
     # Scrape = ScraperFactory.get_scraper(NTUST_INSIDE_URL)
     # data = Scrape.scrape()
@@ -181,13 +198,94 @@ def print_bulletin_data():
 # 測試函數
 
 
-if __name__ == '__main__':
-    # print("hello")
-    Scrape = ScraperFactory.get_scraper(NTUST_LANG_URL)
-    data = Scrape.scrape()
-    for announcement in data:
-        print(announcement)
-        SaveBulletin(announcement)
+class bulletinraw(BaseModel):
+    rawid: int
+    publisher: str
+    title: str
+    url: str
+    content: str
+    addtime: datetime
+    processstatus: bool
 
-    # print_bulletin_data()
+def get_unprocessed_bulletins():
+    connection = psycopg2.connect(**db_config)
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT * FROM bulletinraw
+        WHERE processstatus = false
+        """)
+    data = cursor.fetchall()
+    new_data = [
+        bulletinraw(
+            rawid = row[0],
+            publisher = row[1],
+            title = row[2],
+            url = row[3],
+            content = row[4],
+            addtime = row[5],
+            processstatus = row[6]
+        )
+        for row in data
+    ]
+    cursor.close()
+    connection.close()
+    return new_data
+
+def update_bulletin_status():
+    connection = psycopg2.connect(**db_config)
+    cursor = connection.cursor()
+    cursor.execute("""
+        UPDATE bulletinraw
+        SET processstatus = true
+        WHERE processstatus = false
+        """)
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None :
+    # await context.bot.send_message(chat_id="940229605", text="hi", parse_mode=ParseMode.MARKDOWN_V2)
+    # print("send_new_data called with context:", context)
+
+    # 讀資料庫
+    data =  get_unprocessed_bulletins()
+    # print(data)
+    # [(1, 'test', 'test', 'test', 'test', datetime.datetime(2024, 6, 20, 15, 24, 47, 957529), False)]
+    # 發送資料
+    # pprint.pprint(data)
+
+    for i in data:
+        # pprint.pprint(i)
+        # message = f"[{i.title}]({i.url})"
+        # BUG : 目前MARKDOWN內不能包含 - 等特殊字元否則會抱錯 詳細的解法還要看後續升級
+        # await context.bot.send_message(chat_id="940229605", text=f"[{i.title}]({i.url})", parse_mode=ParseMode.MARKDOWN_V2)
+        await context.bot.send_message(chat_id="940229605", text = i.title ) # 超連結 怎麼做?
+        await context.bot.send_message(chat_id="6904184189", text = i.title ) # 超連結 怎麼做?
+
+    update_bulletin_status()
+
+def main() -> None:
+    chatid = "940229605"
+    TOKEN = "6588891089:AAETxqnSzmn7WBqBsHQ5tPcBYuiK36Dc1a8"
+    # application = Application.builder().token(TOKEN).post_init(post_init).post_stop(post_stop).build()
+    application = Application.builder().token(TOKEN).build()
+    job_queue = application.job_queue
+    # job_minute = job_queue.run_repeating(update_user, interval=30, first=3)
+    # job_minute = job_queue.run_repeating(llm, interval=15, first=3)
+    job_minute = job_queue.run_repeating(send_new_data, interval=20, first=10)
+    job_minute = job_queue.run_repeating(scrape, interval=15, first=3)
+
+
+    # application.add_handler(CommandHandler(["start", "help"], start))
+    # application.add_handler(CommandHandler("help", help))
+    # application.add_handler(CommandHandler("search", search))
+    # application.add_handler(CommandHandler("whereami", whereami))
+    # application.add_handler(CommandHandler("subscribe", subscribe))
+    # application.add_handler(CommandHandler("unsubscribe", unsubscribe))
+    # application.add_handler(CommandHandler("list", list))
+
+    # Run the bot until the user presses Ctrl-C
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
+if __name__ == '__main__':
+    main()
 
