@@ -1,25 +1,15 @@
-from abc import ABC, abstractmethod
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urlparse
-import json,os
-import psycopg2
-import traceback
-import time
-from datetime import datetime
-import os
-import json
-from telegram.ext import CommandHandler, CallbackQueryHandler, MessageHandler, Updater, Application, ContextTypes, filters, ChatMemberHandler
-from telegram import  Chat, ChatMember, ChatMemberUpdated, ForceReply, Update, Bot 
-import telegram
-import copy
 from decimal import Decimal
+from datetime import datetime
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from pydantic import BaseModel
-import pprint 
-import asyncio
+from urllib.parse import urlparse
+from typing import List, Dict, Any
+from abc import ABC, abstractmethod
 from telegram.constants import ParseMode
-
+from telegram import  Chat, ChatMember, ChatMemberUpdated, ForceReply, Update, Bot 
+from telegram.ext import CommandHandler, CallbackQueryHandler, MessageHandler, Updater, Application, ContextTypes, filters, ChatMemberHandler
+import json, os, requests, psycopg2, traceback, time, telegram, copy, pprint, asyncio, functools
 
 db_config = {
     'dbname': 'mydb',
@@ -28,7 +18,6 @@ db_config = {
     'host': '127.0.0.1',
     'port': '5432'
 }
-
 
 NTUST_LANG_URL = "https://lc.ntust.edu.tw/p/403-1070-1053-1.php?Lang=zh-tw"
 NTUST_INSIDE_URL = "https://bulletin.ntust.edu.tw/p/403-1045-1391-1.php?Lang=zh-tw"
@@ -41,7 +30,8 @@ class Scraper(ABC):
     @abstractmethod
     def scrape(self):
         pass
-#靜態類別 輸入網址轉類別
+
+# 靜態類別 輸入網址轉類別
 class ScraperFactory:
     @staticmethod
     def get_scraper(url):
@@ -55,10 +45,7 @@ class ScraperFactory:
         else:
             raise ValueError(f"No scraper found for the given URL: {url}")
 
-
 # 台科大公佈欄爬蟲
-# https://bulletin.ntust.edu.tw/p/403-1045-1391-1.php?Lang=zh-tw
-# https://bulletin.ntust.edu.tw/p/403-1045-1391-1.php?Lang=zh-tw
 class NTUSTBulletinScraper(Scraper):
     def scrape(self):
         response = requests.get(self.url)
@@ -126,55 +113,29 @@ class NTUSTMajorAnnouncementScraper(Scraper):
             url = a_tag.get('href')
             yield {"publisher":"publisher","title":title,"url":url,"content":content}  
 
-
-def save_bulletin_to_db(post):
-    try:
-        connection = psycopg2.connect(**db_config)
-        cursor = connection.cursor()
-        # 檢查數據是否已存在
-        cursor.execute("""
-        SELECT * FROM bulletinraw
-        WHERE publisher = %s AND title = %s
-        """, (post['publisher'], post['title']))
-        if cursor.fetchone() is None:
-            # 如果數據不存在，則插入新數據
-            cursor.execute("""
-                INSERT INTO bulletinraw (publisher, title, url, content)
-                VALUES (%s, %s, %s, %s)
-            """, (post['publisher'], post['title'], post['url'], post['content']))
-            connection.commit()
-            # print( {"message": "Data inserted successfully"})
-        else:
-            a = 0 
-            # print({"message": "Data already exists. No action taken."})
-
-    except Exception as Error:
-        error_message = "Error occurred: {}".format(str(Error))
-        error_traceback = traceback.format_exc()
-        print({"error": str(Error), "detail": error_traceback})
-    finally:
-        if connection:
-            cursor.close()
-            connection.close()
-
 def SaveBulletin(data):
+    bulletin_manager = BulletinManager(db_config)
     for row in data:
-        result = save_bulletin_to_db(row)
-        # print(result)
+        print(row)
+        bulletin_manager.save_bulletin(row)
 
 def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
     #should add running event
+    for url in [NTUST_LANG_URL, NTUST_OUTSIDE_URL]: # NTUST_INSIDE_URL, 
+        Scrape = ScraperFactory.get_scraper(url)
+        data = Scrape.scrape()
+        SaveBulletin(data)
     # Scrape = ScraperFactory.get_scraper(NTUST_INSIDE_URL)
     # data = Scrape.scrape()
     # SaveBulletin(data)
 
-    Scrape = ScraperFactory.get_scraper(NTUST_LANG_URL)
-    data = Scrape.scrape()
-    SaveBulletin(data)
+    # Scrape = ScraperFactory.get_scraper(NTUST_LANG_URL)
+    # data = Scrape.scrape()
+    # SaveBulletin(data)
 
-    Scrape = ScraperFactory.get_scraper(NTUST_OUTSIDE_URL)
-    data = Scrape.scrape()
-    SaveBulletin(data)
+    # Scrape = ScraperFactory.get_scraper(NTUST_OUTSIDE_URL)
+    # data = Scrape.scrape()
+    # SaveBulletin(data)
 
 def print_bulletin_data():
     try:
@@ -197,8 +158,80 @@ def print_bulletin_data():
 
 # 測試函數
 
+def handle_db_exceptions(func):
+    @functools.wraps(func)psycopg2
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except psycopg2.DatabaseError as e:
+            print(f"Database error occurred: {e}")
+            raise
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            raise
+    return wrapper
+    
+def debug_info(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # 獲取函數名稱
+        func_name = func.__name__
+        
+        # 獲取位置參數和關鍵字參數的名稱和值
+        func_args = func.__code__.co_varnames[:func.__code__.co_argcount]
+        params = {**dict(zip(func_args, args)), **kwargs}
+        
+        # 打印函數名稱和參數
+        print(f"Executing function: {func_name}")
+        print("Parameters:")
+        for param_name, param_value in params.items():
+            print(f"  {param_name} = {param_value}")
+        
+        # 執行函數並獲取返回值
+        result = func(*args, **kwargs)
+        
+        # 打印返回值
+        print(f"Function {func_name} returned: {result}")
+        
+        return result
+    return wrapper
+# 定義數據庫管理類
+class DatabaseManager:
+    def __init__(self, config: Dict[str, Any]):
+        if not isinstance(config, dict):
+            raise TypeError("Config should be a dictionary")
+        self.config = config
+        print(f"DatabaseManager Config: {self.config}")
 
-class bulletinraw(BaseModel):
+    @handle_db_exceptions
+    def _execute(self, query: str, params: tuple = None, fetch: bool = False):
+        print(f"_execute: {self.config}")  # 打印配置以檢查
+        connection = psycopg2.connect(**self.config)
+        cursor = connection.cursor()
+        cursor.execute(query, params)
+        if fetch:
+            results = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            cursor.close()
+            connection.close()
+            return results, columns
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return None, None
+
+    @debug_info
+    def execute_query(self, query: str, params: tuple = ()) -> List[Dict[str, Any]]:
+        results, columns = self._execute(query, params, fetch=True)
+        if results:
+            return [dict(zip(columns, row)) for row in results]
+        return []
+
+    def execute_non_query(self, query: str, params: tuple = ()) -> None:
+        self._execute(query, params)
+
+# 定義公告數據模型類
+class BulletinRaw(BaseModel):
     rawid: int
     publisher: str
     title: str
@@ -207,48 +240,91 @@ class bulletinraw(BaseModel):
     addtime: datetime
     processstatus: bool
 
-def get_unprocessed_bulletins():
-    connection = psycopg2.connect(**db_config)
-    cursor = connection.cursor()
-    cursor.execute("""
-        SELECT * FROM bulletinraw
-        WHERE processstatus = false
-        """)
-    data = cursor.fetchall()
-    new_data = [
-        bulletinraw(
-            rawid = row[0],
-            publisher = row[1],
-            title = row[2],
-            url = row[3],
-            content = row[4],
-            addtime = row[5],
-            processstatus = row[6]
-        )
-        for row in data
-    ]
-    cursor.close()
-    connection.close()
-    return new_data
+# 定義公告管理類，繼承自數據庫管理類
+class BulletinManager(DatabaseManager):
+    def __init__(self, config: Dict[str, Any]):
+        if not isinstance(config, dict):
+            raise TypeError("Config should be a dictionary")
+        super().__init__(config)  # 調用父類的初始化方法
 
-def update_bulletin_status():
-    connection = psycopg2.connect(**db_config)
-    cursor = connection.cursor()
-    cursor.execute("""
-        UPDATE bulletinraw
-        SET processstatus = true
-        WHERE processstatus = false
-        """)
-    connection.commit()
-    cursor.close()
-    connection.close()
+    
+    def get_unprocessed_bulletins(self) -> List[BulletinRaw]:
+        query = """
+            SELECT * FROM bulletinraw
+            WHERE processstatus = false
+        """
+        data = self.execute_query(query)
+        return [BulletinRaw(**row) for row in data]
+
+    def update_bulletin_status(self) -> None:
+        query = """
+            UPDATE bulletinraw
+            SET processstatus = true
+            WHERE processstatus = false
+        """
+        self.execute_non_query(query)
+        
+    def save_bulletin(self, post: Dict[str, Any]) -> None:
+        query = """
+            INSERT INTO bulletinraw (publisher, title, url, content)
+                VALUES (%s, %s, %s, %s)
+            """
+        self.execute_non_query(query, (post['publisher'], 
+                                             post['title'], 
+                                             post['url'], 
+                                             post['content']))
+
+
+
+class SubscriptionManager(DatabaseManager):
+    def __init__(self, config: Dict[str, Any]):
+        if not isinstance(config, dict):
+            raise TypeError("Config should be a dictionary")
+        super().__init__(config)  
+
+    def add_subscription(self, chatid: str, topic_name: str) -> None:
+        """add new sub"""
+        query = """
+            INSERT INTO subscription (chatid, topic_name)
+            VALUES (%s, %s)
+            ON CONFLICT (chatid, topic_name) DO NOTHING
+        """
+        self.execute_non_query(query, (chatid, topic_name))
+
+    def delete_subscription(self, chatid: str, topic_name: str) -> None:
+        """delete sub"""
+        query = """
+            DELETE FROM subscription
+            WHERE chatid = %s AND topic_name = %s
+        """
+        self.execute_non_query(query, (chatid, topic_name))
+
+    def get_user_subscriptions(self, chatid: str) -> List[Dict[str, Any]]:
+        """get spec user sub """
+        query = """
+            SELECT topic_name, join_date
+            FROM subscription
+            WHERE chatid = %s
+        """
+        data = self.execute_query(query, (chatid,))
+        return [{'topic_name': row['topic_name'], 'join_date': row['join_date']} for row in data]
+
+    def get_all_subscriptions(self) -> List[Dict[str, Any]]:
+        """get all sub"""
+        query = """
+            SELECT chatid, topic_name, join_date
+            FROM subscription
+        """
+        data = self.execute_query(query)
+        return [{'chatid': row['chatid'], 'topic_name': row['topic_name'], 'join_date': row['join_date']} for row in data]
+
 
 async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None :
     # await context.bot.send_message(chat_id="940229605", text="hi", parse_mode=ParseMode.MARKDOWN_V2)
     # print("send_new_data called with context:", context)
-
+    bulletin_manager = BulletinManager(db_config)
     # 讀資料庫
-    data =  get_unprocessed_bulletins()
+    data =  bulletin_manager.get_unprocessed_bulletins()
     # print(data)
     # [(1, 'test', 'test', 'test', 'test', datetime.datetime(2024, 6, 20, 15, 24, 47, 957529), False)]
     # 發送資料
@@ -263,6 +339,33 @@ async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None :
         await context.bot.send_message(chat_id="6904184189", text = i.title ) # 超連結 怎麼做?
 
     update_bulletin_status()
+    
+async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.effective_message.chat_id
+    try:
+        label_name = update.message.text.split(' ')[1:][0]#chinese not work
+    except:
+        await update.effective_message.reply_text("Please enter the topic name")
+        return
+    
+    url = get_labelid
+    data = {
+        "labelname": label_name
+    }
+    response = requests.post(url, json=data)
+    labelid = response.text[1:-1]
+
+    if (labelid == "ul"):#bcs null[1] -> [u]
+        await update.effective_message.reply_text("topic not exist")
+    else:
+        url = add_subscription
+        data = {
+            "chatid": str(chat_id),
+            "labelid": str(labelid)
+        }
+        response = requests.post(url, json=data)
+        await update.effective_message.reply_text("Subscribe topic successfully")
+
 
 def main() -> None:
     chatid = "940229605"
@@ -275,17 +378,29 @@ def main() -> None:
     job_minute = job_queue.run_repeating(send_new_data, interval=20, first=10)
     job_minute = job_queue.run_repeating(scrape, interval=15, first=3)
 
-
+    # accuout 
+    # userid 
+    # labelids  
+    # 
     # application.add_handler(CommandHandler(["start", "help"], start))
     # application.add_handler(CommandHandler("help", help))
     # application.add_handler(CommandHandler("search", search))
     # application.add_handler(CommandHandler("whereami", whereami))
-    # application.add_handler(CommandHandler("subscribe", subscribe))
+    application.add_handler(CommandHandler("subscribe", subscribe))
     # application.add_handler(CommandHandler("unsubscribe", unsubscribe))
-    # application.add_handler(CommandHandler("list", list))
+    # application.add_handler(CommandHandler("list", list)) 
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 if __name__ == '__main__':
-    main()
+    manager = SubscriptionManager(db_config)
+    # main()
+    # bulletin_manager = BulletinManager(db_config)
 
+    # # 獲取未處理的公告
+    # unprocessed_bulletins = bulletin_manager.get_unprocessed_bulletins()
+    # for bulletin in unprocessed_bulletins:
+    #     pprint.pprint(bulletin)
+
+    # 更新公告狀態
+    # bulletin_manager.update_bulletin_status()

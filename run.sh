@@ -9,8 +9,10 @@ script_dir=$(cd "$script_dir" && pwd)
 
 . ./.env
 
-sudo docker stop postgres-main
-sudo docker rm postgres-main
+docker stop postgres-main
+docker rm postgres-main
+
+echo "SQL file path: ${script_dir}/mydb_schema.sql"
 
 # # 创建数据目录
 mkdir -p "${HOST_DIR}/main_data"
@@ -23,7 +25,7 @@ sudo docker run --name postgres-main \
   -e PGDATA=/var/lib/postgresql/data/pgdata \
   -d -p $POSTGRES_MAIN_PORT:5432 \
   -v "${HOST_DIR}/main_data:/var/lib/postgresql/data" \
-  -v "$(pwd)/mydb_schema.sql:/docker-entrypoint-initdb.d/mydb_schema.sql" \
+  -v "${script_dir}/mydb_schema.sql:/docker-entrypoint-initdb.d/mydb_schema.sql" \
   postgres
 
 # psql -h localhost -p 65432 -U admin -d mydb
