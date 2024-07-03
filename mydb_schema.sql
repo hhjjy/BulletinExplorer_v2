@@ -6,16 +6,6 @@ CREATE SEQUENCE subscribe_user_id_seq;
 CREATE SEQUENCE bulletinraw_id_seq;
 CREATE SEQUENCE topics_topicid_seq;
 
--- CREATE TABLE IF NOT EXISTS public.account
--- (
---     userid integer NOT NULL DEFAULT nextval('subscribe_user_id_seq'::regclass),
---     name text COLLATE pg_catalog."default",
---     chatid numeric NOT NULL,
---     status text COLLATE pg_catalog."default",
---     joindate timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
---     CONSTRAINT account_chatid_pkey PRIMARY KEY (chatid)
--- );
-
 
 CREATE TABLE IF NOT EXISTS public.bulletinraw
 (
@@ -31,14 +21,6 @@ CREATE TABLE IF NOT EXISTS public.bulletinraw
 ALTER TABLE public.bulletinraw
 ADD CONSTRAINT unique_title_url UNIQUE (title, url);
 
--- CREATE TABLE IF NOT EXISTS public.users
--- (
---     userid SERIAL NOT NULL,
---     name TEXT UNIQUE,
---     chatid NUMERIC NOT NULL UNIQUE,
---     joindate TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
---     CONSTRAINT users_chatid_pkey PRIMARY KEY (chatid)
--- );
 
 CREATE TABLE IF NOT EXISTS public.users (
     user_id SERIAL PRIMARY KEY,
