@@ -22,12 +22,14 @@ CREATE TABLE IF NOT EXISTS public.bulletinraw
     rawid integer NOT NULL DEFAULT nextval('bulletinraw_id_seq'::regclass),
     publisher character varying(255) COLLATE pg_catalog."default",
     title character varying(255) COLLATE pg_catalog."default",
-    url character varying(255) COLLATE pg_catalog."default",
+    url character varying(1023) COLLATE pg_catalog."default",
     content text COLLATE pg_catalog."default",
     addtime timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     processstatus boolean DEFAULT false,
     CONSTRAINT bulletinraw_rawid_pkey PRIMARY KEY (rawid)
 );
+ALTER TABLE public.bulletinraw
+ADD CONSTRAINT unique_title_url UNIQUE (title, url);
 
 -- CREATE TABLE IF NOT EXISTS public.users
 -- (
@@ -53,5 +55,6 @@ CREATE TABLE IF NOT EXISTS public.subscription (
     CONSTRAINT fk_user FOREIGN KEY (chatid) REFERENCES users(chatid) ON DELETE CASCADE,
     CONSTRAINT unique_user_topic UNIQUE (chatid, topic_name)
 );
+
 
 COMMIT;
