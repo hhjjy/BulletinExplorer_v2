@@ -6,15 +6,11 @@ from pydantic import BaseModel
 from urllib.parse import urlparse
 from typing import List, Dict, Any
 from abc import ABC, abstractmethod
-from telegram.constants import ParseMode
-from telegram import  Chat, ChatMember, ChatMemberUpdated, ForceReply, Update, Bot 
-from telegram.ext import CommandHandler, CallbackQueryHandler, MessageHandler, Updater, Application, ContextTypes, filters, ChatMemberHandler,CallbackContext
-import json, os, requests, psycopg2, traceback, time, telegram, copy, pprint, asyncio, functools,sys
+import json, os, requests, psycopg2, traceback, time, copy, pprint, asyncio, functools,sys
 
 
 # 匯入檔案
 from Manager import *
-from Scraper import *
 from Broker import * 
 from TelegramBot import * 
 

@@ -6,10 +6,7 @@ from pydantic import BaseModel
 from urllib.parse import urlparse
 from typing import List, Dict, Any
 from abc import ABC, abstractmethod
-from telegram.constants import ParseMode
-from telegram import  Chat, ChatMember, ChatMemberUpdated, ForceReply, Update, Bot 
-from telegram.ext import CommandHandler, CallbackQueryHandler, MessageHandler, Updater, Application, ContextTypes, filters, ChatMemberHandler,CallbackContext
-import json, os, requests, psycopg2, traceback, time, telegram, copy, pprint, asyncio, functools,sys
+import json, os, requests, psycopg2, traceback, time, copy, pprint, asyncio, functools,sys
 
 # 設置 PYTHONPATH，使其包含當前目錄
 from collections import defaultdict
@@ -33,19 +30,12 @@ def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
         data = Scrape.scrape()
         SaveBulletin(data)
 
-broker = Broker()
-
-
-
-
-
 
 def main() -> None:
  
     tgbot = TelegramBot("6588891089:AAETxqnSzmn7WBqBsHQ5tPcBYuiK36Dc1a8")
-    #tgbot.repeat_job(send_new_data, 20, 10)
-    #tgbot.repeat_job(scrape, 15, 3)
-    # tgbot.repeat_job(update_user, interval=30, first=3)
+    tgbot.repeat_job(send_new_data, 20, 10)
+    tgbot.repeat_job(scrape, 15, 3)
     tgbot.repeat_job(llm, interval=15, first=3)
 
 
@@ -55,9 +45,10 @@ def main() -> None:
     tgbot.command_handler("list", list)
 
 
-# application.add_handler(CommandHandler("help", help))
-# application.add_handler(CommandHandler("search", search))
-# application.add_handler(CommandHandler("whereami", whereami))
+    # tgbot.command_handler("help", help)
+    # tgbot.command_handler("search", search)
+    # tgbot.command_handler("whereami", whereami)
+    # tgbot.repeat_job(update_user, interval=30, first=3)
 
 
     # Run the bot until the user presses Ctrl-C
@@ -69,5 +60,6 @@ if __name__ == '__main__':
     user = UserManager(db_config)
     pprint.pprint(user.list_all_users())
     # print(manager.get_all_subscriptions())
+    broker = Broker()
     main()
 

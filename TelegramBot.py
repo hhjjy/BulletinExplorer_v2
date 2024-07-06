@@ -12,8 +12,6 @@ from telegram.ext import CommandHandler, CallbackQueryHandler, MessageHandler, U
 import json, os, requests, psycopg2, traceback, time, telegram, copy, pprint, asyncio, functools,sys
 
 
-
-
 from TelegramBotCommand import * 
 class TelegramBot:
     def __init__(self, TOKEN):
