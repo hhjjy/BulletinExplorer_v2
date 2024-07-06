@@ -43,8 +43,10 @@ broker = Broker()
 def main() -> None:
  
     tgbot = TelegramBot("6588891089:AAETxqnSzmn7WBqBsHQ5tPcBYuiK36Dc1a8")
-    tgbot.repeat_job(send_new_data, 20, 10)
-    tgbot.repeat_job(scrape, 15, 3)
+    #tgbot.repeat_job(send_new_data, 20, 10)
+    #tgbot.repeat_job(scrape, 15, 3)
+    # tgbot.repeat_job(update_user, interval=30, first=3)
+    tgbot.repeat_job(llm, interval=15, first=3)
 
 
     tgbot.command_handler(["start", "help"], start)
@@ -53,9 +55,6 @@ def main() -> None:
     tgbot.command_handler("list", list)
 
 
-# application = Application.builder().token(TOKEN).post_init(post_init).post_stop(post_stop).build()
-# job_minute = job_queue.run_repeating(update_user, interval=30, first=3)
-# job_minute = job_queue.run_repeating(llm, interval=15, first=3)
 # application.add_handler(CommandHandler("help", help))
 # application.add_handler(CommandHandler("search", search))
 # application.add_handler(CommandHandler("whereami", whereami))

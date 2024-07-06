@@ -18,6 +18,8 @@ from Scraper import *
 from Broker import * 
 from TelegramBot import * 
 
+broker = Broker()
+
 async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None :
     # await context.bot.send_message(chat_id="940229605", text="hi", parse_mode=ParseMode.MARKDOWN_V2)
     # print("send_new_data called with context:", context)
