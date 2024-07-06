@@ -47,10 +47,10 @@ def main() -> None:
     tgbot.repeat_job(scrape, 15, 3)
 
 
-    application.add_handler(CommandHandler(["start", "help"], start))
-    application.add_handler(CommandHandler("subscribe", subscribe))
-    application.add_handler(CommandHandler("unsubscribe", unsubscribe))
-    application.add_handler(CommandHandler("list", list))
+    tgbot.command_handler(["start", "help"], start)
+    tgbot.command_handler("subscribe", subscribe)
+    tgbot.command_handler("unsubscribe", unsubscribe)
+    tgbot.command_handler("list", list)
 
 
 # application = Application.builder().token(TOKEN).post_init(post_init).post_stop(post_stop).build()
@@ -62,7 +62,7 @@ def main() -> None:
 
 
     # Run the bot until the user presses Ctrl-C
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    tgbot.polling("Update.ALL_TYPES")
 
 if __name__ == '__main__':
     # manager.add_subscription( "940229605", "便當")
