@@ -1,4 +1,20 @@
+from decimal import Decimal
+from datetime import datetime
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from pydantic import BaseModel
+from urllib.parse import urlparse
+from typing import List, Dict, Any
+from abc import ABC, abstractmethod
+import json, os, requests, psycopg2, traceback, time, copy, pprint, asyncio, functools,sys
 
+
+# 匯入檔案
+from Manager import *
+from Broker import * 
+from TelegramBot import * 
+
+broker = Broker()
 
 async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None :
     # await context.bot.send_message(chat_id="940229605", text="hi", parse_mode=ParseMode.MARKDOWN_V2)
