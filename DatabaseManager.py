@@ -43,7 +43,7 @@ def debug_info(func):
         result = func(*args, **kwargs)
         
         # 打印返回值
-        print(f"Function {func_name} returned: {result}")
+        # print(f"Function {func_name} returned: {result}")
         
         return result
     return wrapper
