@@ -15,36 +15,19 @@ from Broker import *
 from TelegramBot import * 
 
 broker = Broker()
-
-# async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None :
-#     # await context.bot.send_message(chat_id="940229605", text="hi", parse_mode=ParseMode.MARKDOWN_V2)
-#     print("send_new_data called with context:", context)
-#     bulletin_manager = BulletinManager(db_config)
-#     # 讀資料庫
-#     unprocessed_bulletins =  bulletin_manager.get_unprocessed_bulletins()
-#     for bulletin in unprocessed_bulletins:
-#         # pprint.pprint(i)
-#         # message = f"[{i.title}]({i.url})"
-#         # BUG : 目前MARKDOWN內不能包含 - 等特殊字元否則會抱錯 詳細的解法還要看後續升級
-#         # await context.bot.send_message(chat_id="940229605", text=f"[{i.title}]({i.url})", parse_mode=ParseMode.MARKDOWN_V2)
-#         await context.bot.send_message(chat_id="940229605", text = bulletin.title ) # 超連結 怎麼做?
-
-#     bulletin_manager.update_bulletin_status()
-
-
 async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None:
+    subscription_manager = SubscriptionManager(db_config)
     print("send_new_data called with context:", context)
     bulletin_manager = BulletinManager(db_config)
     new_bulletins = bulletin_manager.get_unsent_bulletins()
     for bulletin in new_bulletins:
-        print(f"Sending bulletin: {bulletin['title']}")
-        # 傳送資料的邏輯
-        # ...
-        # 更新 sendstatus 為 True
+        topic = bulletin['topic']
+        subscribers = subscription_manager.get_subscribers_by_topic(topic)
+        print(f"Sending bulletin: {bulletin['title']} to subscribers of {topic}")
+        for user in subscribers:
+            await context.bot.send_message(chat_id=user['chatid'], text=bulletin['title'])
         bulletin['sendstatus'] = True
         bulletin_manager.update_bulletin(bulletin)
-        await context.bot.send_message(chat_id="940229605", text = bulletin['title'] ) # 超連結 怎麼做?
-
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_manager = UserManager(db_config)
@@ -102,17 +85,12 @@ async def llm(context: ContextTypes.DEFAULT_TYPE) -> None:
         for bulletin in unclassified_bulletins:
             title = bulletin.get('title', '')
             # 檢查並提取【】中的分類
-            if '【' in title and '】' in title:
-                try:
-                    category = title.split('【')[1].split('】')[0]
-                    bulletin['category'] = category
-                    print(category)
-                    bulletin_manager.update_bulletin(bulletin)
-                except IndexError:
-                    print(f"無法解析分類: {title}")
-                except Exception as e:
-                    print(f"更新分類時發生錯誤: {str(e)}")
-            else:
-                print(f"找不到分類標記: {title}")
+            try:
+                topic = title.split('【')[1].split('】')[0]
+                bulletin['topic'] = topic
+                print(topic)
+                bulletin_manager.update_bulletin(bulletin)
+            except Exception as e:
+                print(f"更新分類時發生錯誤: {str(e)}")
     except Exception as e:
         print(f"執行 llm 函數時發生錯誤: {str(e)}")

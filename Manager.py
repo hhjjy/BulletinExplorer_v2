@@ -11,7 +11,7 @@ class Bulletin(BaseModel):
     content: str
     addtime: datetime
     sendstatus: bool
-    category: str = None
+    topic: str = None
         
 # 定義公告管理類，繼承自數據庫管理類
 class BulletinManager(DatabaseManager):
@@ -36,7 +36,7 @@ class BulletinManager(DatabaseManager):
 
 
     def get_unclassified_bulletins(self) -> List[Dict[str, Any]]:
-        query = "SELECT * FROM bulletin WHERE category IS NULL AND sendstatus = FALSE"
+        query = "SELECT * FROM bulletin WHERE topic IS NULL AND sendstatus = FALSE"
         results = self.execute_query(query)
         return results  # 返回列表的字典
         
@@ -44,10 +44,10 @@ class BulletinManager(DatabaseManager):
     def update_bulletin(self, bulletin: Dict[str, Any]) -> None:
         query = """
             UPDATE bulletin
-            SET category = %s, sendstatus = %s
+            SET topic = %s, sendstatus = %s
             WHERE rawid = %s
         """
-        params = (bulletin['category'], bulletin.get('sendstatus', False), bulletin['rawid'])
+        params = (bulletin['topic'], bulletin.get('sendstatus', False), bulletin['rawid'])
         self.execute_non_query(query, params)  # 使用 execute_non_query
  
    
@@ -167,4 +167,13 @@ class SubscriptionManager(DatabaseManager):
         """
         data = self.execute_query(query)
         return [{'chatid': row['chatid'], 'topic_name': row['topic_name'], 'join_date': row['join_date']} for row in data]
-
+        
+    def get_subscribers_by_topic(self, topic_name: str) -> List[Dict[str, Any]]:
+        """根據主題名稱查詢訂閱該主題的用戶"""
+        query = """
+            SELECT users.chatid
+            FROM users
+            JOIN subscription ON users.chatid = subscription.chatid
+            WHERE subscription.topic_name = %s
+        """
+        return self.execute_query(query, (topic_name,))

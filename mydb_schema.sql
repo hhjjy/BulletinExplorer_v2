@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.bulletin
     content text COLLATE pg_catalog."default",
     addtime timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     sendstatus boolean DEFAULT false,
-    category character varying(255) COLLATE pg_catalog."default",
+    topic character varying(255) COLLATE pg_catalog."default",
     CONSTRAINT bulletin_rawid_pkey PRIMARY KEY (rawid)
 );
 ALTER TABLE public.bulletin
