@@ -16,26 +16,34 @@ from TelegramBot import *
 
 broker = Broker()
 
-async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None :
-    # await context.bot.send_message(chat_id="940229605", text="hi", parse_mode=ParseMode.MARKDOWN_V2)
-    # print("send_new_data called with context:", context)
+# async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None :
+#     # await context.bot.send_message(chat_id="940229605", text="hi", parse_mode=ParseMode.MARKDOWN_V2)
+#     print("send_new_data called with context:", context)
+#     bulletin_manager = BulletinManager(db_config)
+#     # 讀資料庫
+#     unprocessed_bulletins =  bulletin_manager.get_unprocessed_bulletins()
+#     for bulletin in unprocessed_bulletins:
+#         # pprint.pprint(i)
+#         # message = f"[{i.title}]({i.url})"
+#         # BUG : 目前MARKDOWN內不能包含 - 等特殊字元否則會抱錯 詳細的解法還要看後續升級
+#         # await context.bot.send_message(chat_id="940229605", text=f"[{i.title}]({i.url})", parse_mode=ParseMode.MARKDOWN_V2)
+#         await context.bot.send_message(chat_id="940229605", text = bulletin.title ) # 超連結 怎麼做?
+
+#     bulletin_manager.update_bulletin_status()
+
+
+async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None:
+    print("send_new_data called with context:", context)
     bulletin_manager = BulletinManager(db_config)
-    # 讀資料庫
-    unprocessed_bulletins =  bulletin_manager.get_unprocessed_bulletins()
-    # print(data)
-    # [(1, 'test', 'test', 'test', 'test', datetime.datetime(2024, 6, 20, 15, 24, 47, 957529), False)]
-    # 發送資料
-    # pprint.pprint(data)
-
-    for bulletin in unprocessed_bulletins:
-        # pprint.pprint(i)
-        # message = f"[{i.title}]({i.url})"
-        # BUG : 目前MARKDOWN內不能包含 - 等特殊字元否則會抱錯 詳細的解法還要看後續升級
-        # await context.bot.send_message(chat_id="940229605", text=f"[{i.title}]({i.url})", parse_mode=ParseMode.MARKDOWN_V2)
-        await context.bot.send_message(chat_id="940229605", text = bulletin.title ) # 超連結 怎麼做?
-        await context.bot.send_message(chat_id="6904184189", text = bulletin.title ) # 超連結 怎麼做?
-
-    bulletin_manager.update_bulletin_status()
+    new_bulletins = bulletin_manager.get_unsent_bulletins()
+    for bulletin in new_bulletins:
+        print(f"Sending bulletin: {bulletin['title']}")
+        # 傳送資料的邏輯
+        # ...
+        # 更新 sendstatus 為 True
+        bulletin['sendstatus'] = True
+        bulletin_manager.update_bulletin(bulletin)
+        await context.bot.send_message(chat_id="940229605", text = bulletin['title'] ) # 超連結 怎麼做?
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -86,17 +94,25 @@ async def list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.effective_message.reply_text(response_text)
 
-async def llm(context: ContextTypes.DEFAULT_TYPE) -> None :
-    # 从 job context 中获取 chat_id
-    # chat_id = job.context
-    # 分類完 
-    broker.push_message('午餐','好吃')
-    # 取得消息
-    users = broker.get_message()
-    # 傳送 
-    for user  in users :
-        # self.memory.append({'chatid':f'{user}','topic_name':f'{topic}','message':f'{message}'})
-        await context.bot.send_message(chat_id=user['chatid'], text=f"[{user['topic_name']}][{user['message']}]")
 
-
-
+async def llm(context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        bulletin_manager = BulletinManager(db_config)
+        unclassified_bulletins = bulletin_manager.get_unclassified_bulletins()
+        for bulletin in unclassified_bulletins:
+            title = bulletin.get('title', '')
+            # 檢查並提取【】中的分類
+            if '【' in title and '】' in title:
+                try:
+                    category = title.split('【')[1].split('】')[0]
+                    bulletin['category'] = category
+                    print(category)
+                    bulletin_manager.update_bulletin(bulletin)
+                except IndexError:
+                    print(f"無法解析分類: {title}")
+                except Exception as e:
+                    print(f"更新分類時發生錯誤: {str(e)}")
+            else:
+                print(f"找不到分類標記: {title}")
+    except Exception as e:
+        print(f"執行 llm 函數時發生錯誤: {str(e)}")

@@ -4,11 +4,12 @@ from collections import defaultdict
 from Manager import * 
 class Broker:
     def __init__(self):
-        self.topics = defaultdict(set)  # 存储主题及其订阅者
-        self.users = defaultdict(set)   # 存储用户及其订阅的主题
+        self.topics = defaultdict(set) 
+        self.users = defaultdict(set)   
         self.manager =  SubscriptionManager(db_config)
         self.memory = [] 
         self.load_users()
+
 
     def load_users(self):
         subscriptions = self.manager.get_all_subscriptions()
@@ -33,6 +34,7 @@ class Broker:
 
         self.manager.delete_subscription(user,topic)
 
+
     def push_message(self, topic, message):
         if topic in self.topics:
             for user in self.topics[topic]:
@@ -40,17 +42,19 @@ class Broker:
         else:
             print(f"No subscribers for topic: {topic}")
 
+
     def send_message(self, user, topic, message):
         # 模拟发送消息给用户
         print(f"Sending message to {user}: [{topic}] {message}")
         self.memory.append({'chatid':f'{user}','topic_name':f'{topic}','message':f'{message}'})
+
 
     def get_message(self):
         data = self.memory.copy()
         self.memory = [] 
         return data
 
-# 测试示例
+# 範例
 if __name__ == "__main__":
     system = PubSubSystem()
 

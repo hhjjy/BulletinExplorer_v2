@@ -7,7 +7,7 @@ db_config = {
     'user': 'admin',
     'password': '12345',
     'host': '127.0.0.1',
-    'port': '5432'
+    'port': '65432'
 }
 
 def handle_db_exceptions(func):
@@ -34,7 +34,7 @@ def debug_info(func):
         params = {**dict(zip(func_args, args)), **kwargs}
         
         # 打印函數名稱和參數
-        print(f"Executing function: {func_name}")
+        print(f"Executing function: 是{func_name}")
         # print("Parameters:")
         # for param_name, param_value in params.items():
         #     print(f"  {param_name} = {param_value}")

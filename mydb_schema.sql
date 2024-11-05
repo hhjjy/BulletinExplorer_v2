@@ -3,22 +3,23 @@
 BEGIN;
     
 CREATE SEQUENCE subscribe_user_id_seq;
-CREATE SEQUENCE bulletinraw_id_seq;
+CREATE SEQUENCE bulletin_id_seq;
 CREATE SEQUENCE topics_topicid_seq;
 
 
-CREATE TABLE IF NOT EXISTS public.bulletinraw
+CREATE TABLE IF NOT EXISTS public.bulletin
 (
-    rawid integer NOT NULL DEFAULT nextval('bulletinraw_id_seq'::regclass),
+    rawid integer NOT NULL DEFAULT nextval('bulletin_id_seq'::regclass),
     publisher character varying(255) COLLATE pg_catalog."default",
     title character varying(255) COLLATE pg_catalog."default",
     url character varying(1023) COLLATE pg_catalog."default",
     content text COLLATE pg_catalog."default",
     addtime timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    processstatus boolean DEFAULT false,
-    CONSTRAINT bulletinraw_rawid_pkey PRIMARY KEY (rawid)
+    sendstatus boolean DEFAULT false,
+    category character varying(255) COLLATE pg_catalog."default",
+    CONSTRAINT bulletin_rawid_pkey PRIMARY KEY (rawid)
 );
-ALTER TABLE public.bulletinraw
+ALTER TABLE public.bulletin
 ADD CONSTRAINT unique_title_url UNIQUE (title, url);
 
 
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     chatid VARCHAR(50) NOT NULL UNIQUE,
     joindate TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
 
 CREATE TABLE IF NOT EXISTS public.subscription (
     subscription_id SERIAL PRIMARY KEY,

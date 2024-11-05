@@ -20,12 +20,12 @@ from TelegramBot import *
 def SaveBulletin(data):
     bulletin_manager = BulletinManager(db_config)
     for row in data:
-        print(row)
+        #print(row)
         bulletin_manager.save_bulletin(row)
 
-def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
+async def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
     #should add running event
-    for url in [NTUST_LANG_URL, NTUST_OUTSIDE_URL]: # NTUST_INSIDE_URL, 
+    for url in [NTUST_LANG_URL]: # NTUST_INSIDE_URL, 
         Scrape = ScraperFactory.get_scraper(url)
         data = Scrape.scrape()
         SaveBulletin(data)
@@ -34,9 +34,9 @@ def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
 def main() -> None:
  
     tgbot = TelegramBot("6588891089:AAETxqnSzmn7WBqBsHQ5tPcBYuiK36Dc1a8")
-    #tgbot.repeat_job(send_new_data, 20, 10)
+    tgbot.repeat_job(send_new_data, 20, 10)
     tgbot.repeat_job(scrape, 15, 3)
-    #tgbot.repeat_job(llm, interval=15, first=3)
+    tgbot.repeat_job(llm, interval=15, first=3)
 
 
     tgbot.command_handler(["start", "help"], start)
