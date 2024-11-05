@@ -34,9 +34,9 @@ def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
 def main() -> None:
  
     tgbot = TelegramBot("6588891089:AAETxqnSzmn7WBqBsHQ5tPcBYuiK36Dc1a8")
-    tgbot.repeat_job(send_new_data, 20, 10)
+    #tgbot.repeat_job(send_new_data, 20, 10)
     tgbot.repeat_job(scrape, 15, 3)
-    tgbot.repeat_job(llm, interval=15, first=3)
+    #tgbot.repeat_job(llm, interval=15, first=3)
 
 
     tgbot.command_handler(["start", "help"], start)
@@ -51,15 +51,12 @@ def main() -> None:
     # tgbot.repeat_job(update_user, interval=30, first=3)
 
 
-    # Run the bot until the user presses Ctrl-C
     tgbot.polling("Update.ALL_TYPES")
 
 if __name__ == '__main__':
-    # manager.add_subscription( "940229605", "便當")
-    # manager.add_subscription( "940229605", "早餐")
+    # manager.add_subscription( "940229605", "早安")
     user = UserManager(db_config)
     pprint.pprint(user.list_all_users())
-    # print(manager.get_all_subscriptions())
     broker = Broker()
     main()
 
