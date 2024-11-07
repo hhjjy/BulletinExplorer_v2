@@ -2,24 +2,21 @@ from abc import ABC, abstractmethod
 from bs4 import BeautifulSoup
 import json, os, requests, psycopg2, traceback, time, telegram, copy, pprint, asyncio, functools,sys
 
-
-
-#NTUST_LANG1 = "https://lc.ntust.edu.tw/p/403-1070-1053-1.php?Lang=zh-tw"
-NTUST_INSIDE = "https://bulletin.ntust.edu.tw/p/403-1045-1391-1.php?Lang=zh-tw"
-NTUST_OUTSIDE = "https://www.ntust.edu.tw/p/403-1000-168-1.php?Lang=zh-tw"
-NTUST_LANG = "https://lc.ntust.edu.tw/app/index.php?Action=mobilercglist"#
-NTUST_IAC = "https://iac.ntust.edu.tw/p/403-1061-1147-1.php?Lang=zh-tw"
-NTUST_OAA = "https://www.academic.ntust.edu.tw/p/403-1048-1405-1.php?Lang=zh-tw"
-
-url_main_method = {
+# #NTUST_LANG1 = "https://lc.ntust.edu.tw/p/403-1070-1053-1.php?Lang=zh-tw"
+# NTUST_INSIDE = "https://bulletin.ntust.edu.tw/p/403-1045-1391-1.php?Lang=zh-tw"
+# NTUST_OUTSIDE = "https://www.ntust.edu.tw/p/403-1000-168-1.php?Lang=zh-tw"
+# NTUST_LANG = "https://lc.ntust.edu.tw/app/index.php?Action=mobilercglist"#
+# NTUST_IAC = "https://iac.ntust.edu.tw/p/403-1061-1147-1.php?Lang=zh-tw"
+# NTUST_OAA = "https://www.academic.ntust.edu.tw/p/403-1048-1405-1.php?Lang=zh-tw"
+main_method = {
     # main 
-    "2台科大教務處": "https://www.academic.ntust.edu.tw/p/403-1048-1405-1.php?Lang=zh-tw",
+    "台科大教務處": "https://www.academic.ntust.edu.tw/p/403-1048-1405-1.php?Lang=zh-tw",
     "台科大主計室": "https://www.accounting.ntust.edu.tw/p/403-1067-1-1.php?Lang=zh-tw",
     "台科大電子計算中心": "https://www.cc.ntust.edu.tw/p/403-1050-1426-1.php?Lang=zh-tw",
     "台科大教學發展中心": "https://ctld.ntust.edu.tw/p/403-1051-1430-1.php?Lang=zh-tw",
     "台科大總務處": "https://www.general.ntust.edu.tw/p/403-1054-5-1.php?Lang=zh-tw",
-    "1台科大產學營運處": "https://iac.ntust.edu.tw/p/403-1061-1147-1.php?Lang=zh-tw",
-    "1台科大語言中心": "https://lc.ntust.edu.tw/p/403-1070-1053-1.php?Lang=zh-tw",
+    "台科大產學營運處": "https://iac.ntust.edu.tw/p/403-1061-1147-1.php?Lang=zh-tw",
+    "台科大語言中心": "https://lc.ntust.edu.tw/p/403-1070-1053-1.php?Lang=zh-tw",
     "台科大圖書館": "https://library.ntust.edu.tw/p/403-1049-1-1.php?Lang=zh-tw",
     "台科大主校網": "https://www.ntust.edu.tw/p/403-1000-168-1.php?Lang=zh-tw",
     "台科大國際事務處": "https://www.oia.ntust.edu.tw/p/403-1060-1-1.php?Lang=zh-tw",
@@ -71,31 +68,24 @@ class Scraper(ABC):
     def scrape(self):
         pass
 
-# 靜態類別 輸入網址轉類別
 class ScraperFactory:
     @staticmethod
-    def get_scraper(web):
-        if web == NTUST_LANG:
+    def get_scraper(key):
+        url = main_method.get(key)
+        if not url:
+            raise ValueError(f"No URL found for the key: {key}")
+        
+        if key == "台科大語言中心":
             data = {
                 "Rcg": "1053",
                 "Op": "loadpage",
                 "Page": "1"
             }
-            return NTUSTLanguageCenterScraper(web, data)
-        elif web == NTUST_OAA:
-            data = {}
-            return NTUSTScraper(web, data)
-        elif web == NTUST_IAC:
-            data = {}
-            return NTUSTScraper(web, data)
+            return NTUSTLanguageCenterScraper(url, data)
         else:
-            raise ValueError(f"No scraper found for the given URL: {web}")
-
-        # elif url == NTUST_LANG1:
-        #     data = {}
-        #     return NTUSTLanguageCenterScraper(url, data)
-            
-
+            data = {}
+            return NTUSTScraper(url, data)
+        
 # 台科大公佈欄爬蟲
 class NTUSTScraper(Scraper):
     def __init__(self, url, data):

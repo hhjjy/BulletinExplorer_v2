@@ -25,7 +25,7 @@ def SaveBulletin(data):
 
 async def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
     #should add running event
-    for web in [NTUST_LANG, NTUST_OAA, NTUST_IAC]: # NTUST_INSIDE_URL, 
+    for web in ["台科大語言中心"]: # NTUST_INSIDE_URL, 
         Scrape = ScraperFactory.get_scraper(web)
         data = Scrape.scrape()
         SaveBulletin(data)
