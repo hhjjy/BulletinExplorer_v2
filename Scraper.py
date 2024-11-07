@@ -4,9 +4,33 @@ import json, os, requests, psycopg2, traceback, time, telegram, copy, pprint, as
 
 
 
-NTUST_LANG_URL = "https://lc.ntust.edu.tw/p/403-1070-1053-1.php?Lang=zh-tw"
-NTUST_INSIDE_URL = "https://bulletin.ntust.edu.tw/p/403-1045-1391-1.php?Lang=zh-tw"
-NTUST_OUTSIDE_URL = "https://www.ntust.edu.tw/p/403-1000-168-1.php?Lang=zh-tw"
+NTUST_LANG = "https://lc.ntust.edu.tw/p/403-1070-1053-1.php?Lang=zh-tw"
+NTUST_INSIDE = "https://bulletin.ntust.edu.tw/p/403-1045-1391-1.php?Lang=zh-tw"
+NTUST_OUTSIDE = "https://www.ntust.edu.tw/p/403-1000-168-1.php?Lang=zh-tw"
+
+NTUST_LANG1 = "https://lc.ntust.edu.tw/app/index.php?Action=mobilercglist"#,  {  "Rcg": "1053","Op": "loadpage", "Page": "3"}}
+
+NTUST_LANG2 = "https://lc.ntust.edu.tw/app/index.php?Action=mobilercglist?t"#,  {  "Rcg": "1053","Op": "loadpage", "Page": "3"}}
+
+headers = {
+    "Accept": "*/*",
+    "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Connection": "keep-alive",
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "Cookie": "PageLang=zh-tw; _counter=1711599",
+    "DNT": "1",
+    "Origin": "https://lc.ntust.edu.tw",
+    "Referer": "https://lc.ntust.edu.tw/p/403-1070-1053-1.php?Lang=zh-tw",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    "X-Requested-With": "XMLHttpRequest",
+    "sec-ch-ua": '"Not?A_Brand";v="99", "Chromium";v="130"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"macOS"'
+}
+
 
 class Scraper(ABC):
     def __init__(self, url):
@@ -20,15 +44,37 @@ class Scraper(ABC):
 class ScraperFactory:
     @staticmethod
     def get_scraper(url):
-        # 根據不同的網址返回不同的爬蟲實例
-        if "bulletin.ntust.edu.tw" in url:
-            return NTUSTBulletinScraper(url)
-        elif "lc.ntust.edu.tw" in url:
-            return NTUSTLanguageCenterScraper(url)
-        elif "www.ntust.edu.tw" in url:
-            return NTUSTMajorAnnouncementScraper(url)
+        if url == NTUST_LANG:
+            data = {
+            }
+            return NTUSTLanguageCenterScraper(url, data)
+        elif url == NTUST_LANG1:
+            data = {
+                "Rcg": "1053",
+                "Op": "loadpage",
+                "Page": "3"
+            }
+            return NewNTUSTLanguageCenterScraper(url, data)
+        elif url == NTUST_LANG2:
+            data = {
+                "Rcg": "1053",
+                "Op": "loadpage",
+                "Page": "2"
+            }
+            return NewNTUSTLanguageCenterScraper(url, data)
         else:
             raise ValueError(f"No scraper found for the given URL: {url}")
+        # 如有其他 Scraper 類型，繼續添加
+        # 根據不同的網址返回不同的爬蟲實例
+        # if "bulletin.ntust.edu.tw" in url:
+        #     return NTUSTBulletinScraper(url)
+        # elif "Action=mobilercglist" in url:
+        #     return NewNTUSTLanguageCenterScraper(url)
+        # elif "lc.ntust.edu.tw" in url:
+        #     return NTUSTLanguageCenterScraper(url)
+        # elif "www.ntust.edu.tw" in url:
+        #     return NTUSTMajorAnnouncementScraper(url)
+            
 
 # 台科大公佈欄爬蟲
 class NTUSTBulletinScraper(Scraper):
@@ -58,6 +104,9 @@ class NTUSTBulletinScraper(Scraper):
 
 # 台科大語言中心爬蟲
 class NTUSTLanguageCenterScraper(Scraper):
+    def __init__(self, url, data):
+        super().__init__(url)
+        self.data = data
     def scrape(self):
         print("Scraping NTUST Language Center...")
         response = requests.get(self.url)
@@ -80,6 +129,39 @@ class NTUSTLanguageCenterScraper(Scraper):
                 for p in p_tags:
                     content += p.get_text(strip=True)
             yield {"publisher":publisher,"title":title,"url":url,"content":content}  
+# 新版台科大語言中心爬蟲20241107
+class NewNTUSTLanguageCenterScraper(Scraper):
+    def __init__(self, url, data):
+        self.url = url
+        self.data = data
+
+    def scrape(self):
+        print("Scraping NTUST Language Center...")
+        response = requests.post(self.url, headers=headers, data=self.data)
+        content = response.text
+        soup = BeautifulSoup(content, 'html.parser')
+        # 添加針對台科大語言中心的爬蟲邏輯
+        items = soup.find_all('div', class_='mtitle')
+
+        result = []
+        for item in items:
+            title_tag = item.find('a')
+            title = ""
+            if title_tag:
+                title = title_tag.get_text(strip=True)
+                url = title_tag['href']
+                publisher = "台科大語言中心"
+                content = ""
+                if url:
+                    title = title_tag.get_text(strip=True) 
+                    # 取得標題的內文
+                    webpage = requests.get(url)
+                    webpage_soup = BeautifulSoup(webpage.content, 'html.parser')
+                    div = webpage_soup.find('div',attrs={'class':'mpgdetail'})
+                    p_tags = div.find_all('p')
+                    for p in p_tags:
+                        content += p.get_text(strip=True)
+                yield {"publisher":publisher,"title":title,"url":url,"content":content}  
 
 # 台科大校網公布欄爬蟲
 class NTUSTMajorAnnouncementScraper(Scraper):

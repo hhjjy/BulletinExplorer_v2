@@ -25,8 +25,8 @@ def SaveBulletin(data):
 
 async def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
     #should add running event
-    for url in [NTUST_LANG_URL]: # NTUST_INSIDE_URL, 
-        Scrape = ScraperFactory.get_scraper(url)
+    for web in [NTUST_LANG, NTUST_LANG1, NTUST_LANG2]: # NTUST_INSIDE_URL, 
+        Scrape = ScraperFactory.get_scraper(web)
         data = Scrape.scrape()
         SaveBulletin(data)
 
