@@ -24,6 +24,17 @@ async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None:
         topic = bulletin['topic']
         subscribers = subscription_manager.get_subscribers_by_topic(topic)
         print(f"Sending bulletin: {bulletin['title']} to subscribers of {topic}")
+        await context.bot.send_message(
+            chat_id="940229605",
+            text=f'<a href="{bulletin["url"]}">{bulletin["title"]}</a>',
+            parse_mode='HTML'
+        )
+        ## Markdown Escape
+        # await context.bot.send_message(
+        #     chat_id="940229605",
+        #     text=f'[{safe_title}]({safe_url})',
+        #     parse_mode='Markdown'
+        # )
         for user in subscribers:
             await context.bot.send_message(chat_id=user['chatid'], text=bulletin['title'])
         bulletin['sendstatus'] = True

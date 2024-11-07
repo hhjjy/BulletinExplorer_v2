@@ -25,7 +25,7 @@ def SaveBulletin(data):
 
 async def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
     #should add running event
-    for web in [NTUST_LANG, NTUST_LANG1, NTUST_LANG2]: # NTUST_INSIDE_URL, 
+    for web in [NTUST_LANG, NTUST_OAA, NTUST_IAC]: # NTUST_INSIDE_URL, 
         Scrape = ScraperFactory.get_scraper(web)
         data = Scrape.scrape()
         SaveBulletin(data)
@@ -54,7 +54,6 @@ def main() -> None:
     tgbot.polling("Update.ALL_TYPES")
 
 if __name__ == '__main__':
-    # manager.add_subscription( "940229605", "早安")
     user = UserManager(db_config)
     pprint.pprint(user.list_all_users())
     broker = Broker()
