@@ -17,25 +17,42 @@ from Scraper import *
 from Broker import * 
 from TelegramBot import * 
 
+# main.py
+
 def SaveBulletin(data):
     bulletin_manager = BulletinManager(db_config)
-    for row in data:
-        print(row)
-        bulletin_manager.save_bulletin(row)
+    try:
+        bulletin_manager.save_bulletin(data)
+        print(f"Successfully saved bulletin: {data['title']}")
+    except Exception as e:
+        print(f"儲存 {data['title']} 時發生錯誤：{e}")
 
-def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
-    #should add running event
-    for url in [NTUST_LANG_URL, NTUST_OUTSIDE_URL]: # NTUST_INSIDE_URL, 
-        Scrape = ScraperFactory.get_scraper(url)
-        data = Scrape.scrape()
-        SaveBulletin(data)
+lock = asyncio.Lock()
+async def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
+    async with lock:
+        tasks = []
+        for key in main_method:
+            Scrape = ScraperFactory.get_scraper(key)
+            tasks.append(asyncio.create_task(run_scrape(Scrape)))
+        try:
+            await asyncio.gather(*tasks)
+        except KeyboardInterrupt:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
 
+async def run_scrape(Scrape):
+    try:
+        async for data in Scrape.scrape():
+            SaveBulletin(data)  # 使用 await
+    except Exception as e:
+        print(f"在處理 {Scrape} 時發生錯誤：{e}")
 
 def main() -> None:
  
     tgbot = TelegramBot("6588891089:AAETxqnSzmn7WBqBsHQ5tPcBYuiK36Dc1a8")
-    tgbot.repeat_job(send_new_data, 20, 10)
-    tgbot.repeat_job(scrape, 15, 3)
+    tgbot.repeat_job(send_new_data, 5, 10)
+    tgbot.repeat_job(scrape, 90, 3)
     tgbot.repeat_job(llm, interval=15, first=3)
 
 
@@ -51,15 +68,11 @@ def main() -> None:
     # tgbot.repeat_job(update_user, interval=30, first=3)
 
 
-    # Run the bot until the user presses Ctrl-C
     tgbot.polling("Update.ALL_TYPES")
 
 if __name__ == '__main__':
-    # manager.add_subscription( "940229605", "便當")
-    # manager.add_subscription( "940229605", "早餐")
     user = UserManager(db_config)
     pprint.pprint(user.list_all_users())
-    # print(manager.get_all_subscriptions())
     broker = Broker()
     main()
 

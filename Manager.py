@@ -3,14 +3,15 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 
 # 定義公告數據模型類
-class BulletinRaw(BaseModel):
+class Bulletin(BaseModel):
     rawid: int
     publisher: str
     title: str
     url: str
     content: str
     addtime: datetime
-    processstatus: bool
+    sendstatus: bool
+    topic: str = None
         
 # 定義公告管理類，繼承自數據庫管理類
 class BulletinManager(DatabaseManager):
@@ -20,39 +21,56 @@ class BulletinManager(DatabaseManager):
         super().__init__(config)  # 調用父類的初始化方法
 
     
-    def get_unprocessed_bulletins(self) -> List[BulletinRaw]:
+    def get_unprocessed_bulletins(self) -> List[Bulletin]:
         query = """
-            SELECT * FROM bulletinraw
+            SELECT * FROM bulletin
             WHERE processstatus = false
         """
         data = self.execute_query(query)
-        return [BulletinRaw(**row) for row in data]
+        return [Bulletin(**row) for row in data]
 
-    def update_bulletin_status(self) -> None:
-        query = """
-            UPDATE bulletinraw
-            SET processstatus = true
-            WHERE processstatus = false
-        """
-        self.execute_non_query(query)
+    def get_unsent_bulletins(self) -> List[Dict[str, Any]]:
+        query = "SELECT * FROM bulletin WHERE sendstatus = FALSE AND topic IS NOT NULL;"
+        results = self.execute_query(query)
+        return results  # 假設結果是列表的字典
+
+
+    def get_unclassified_bulletins(self) -> List[Dict[str, Any]]:
+        query = "SELECT * FROM bulletin WHERE topic IS NULL AND sendstatus = FALSE"
+        results = self.execute_query(query)
+        return results  # 返回列表的字典
         
+
+    def update_bulletin(self, bulletin: Dict[str, Any]) -> None:
+        query = """
+            UPDATE bulletin
+            SET topic = %s, sendstatus = %s
+            WHERE rawid = %s
+        """
+        params = (bulletin['topic'], bulletin.get('sendstatus', False), bulletin['rawid'])
+        self.execute_non_query(query, params)  # 使用 execute_non_query
+ 
+   
+
     def save_bulletin(self, post: Dict[str, Any]) -> None:
         query = """
-            INSERT INTO bulletinraw (publisher, title, url, content)
+            INSERT INTO bulletin (publisher, title, url, content)
                 VALUES (%s, %s, %s, %s)
             ON CONFLICT (title, url) DO NOTHING
-            """
-        self.execute_non_query(query, (post['publisher'], 
-                                             post['title'], 
-                                             post['url'], 
-                                             post['content']))
+        """
+        params = (post['publisher'], post['title'], post['url'], post['content'])
+        self.execute_non_query(query, params)  # 使用 execute_non_query
+
+
+
+
     def reset_bulletin_status(self, count: int) -> None:
         """將指定數量的公告標記為未處理"""
         query = """
-            UPDATE bulletinraw
+            UPDATE bulletin
             SET processstatus = false
             WHERE rawid IN (
-                SELECT rawid FROM bulletinraw
+                SELECT rawid FROM bulletin
                 WHERE processstatus = true
                 LIMIT %s
             )
@@ -149,4 +167,13 @@ class SubscriptionManager(DatabaseManager):
         """
         data = self.execute_query(query)
         return [{'chatid': row['chatid'], 'topic_name': row['topic_name'], 'join_date': row['join_date']} for row in data]
-
+        
+    def get_subscribers_by_topic(self, topic_name: str) -> List[Dict[str, Any]]:
+        """根據主題名稱查詢訂閱該主題的用戶"""
+        query = """
+            SELECT users.chatid
+            FROM users
+            JOIN subscription ON users.chatid = subscription.chatid
+            WHERE subscription.topic_name = %s
+        """
+        return self.execute_query(query, (topic_name,))

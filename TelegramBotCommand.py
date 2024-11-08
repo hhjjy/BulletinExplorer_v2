@@ -15,28 +15,32 @@ from Broker import *
 from TelegramBot import * 
 
 broker = Broker()
-
-async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None :
-    # await context.bot.send_message(chat_id="940229605", text="hi", parse_mode=ParseMode.MARKDOWN_V2)
-    # print("send_new_data called with context:", context)
+async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None:
+    subscription_manager = SubscriptionManager(db_config)
+    print("send_new_data called with context:", context)
     bulletin_manager = BulletinManager(db_config)
-    # 讀資料庫
-    unprocessed_bulletins =  bulletin_manager.get_unprocessed_bulletins()
-    # print(data)
-    # [(1, 'test', 'test', 'test', 'test', datetime.datetime(2024, 6, 20, 15, 24, 47, 957529), False)]
-    # 發送資料
-    # pprint.pprint(data)
-
-    for bulletin in unprocessed_bulletins:
-        # pprint.pprint(i)
-        # message = f"[{i.title}]({i.url})"
-        # BUG : 目前MARKDOWN內不能包含 - 等特殊字元否則會抱錯 詳細的解法還要看後續升級
-        # await context.bot.send_message(chat_id="940229605", text=f"[{i.title}]({i.url})", parse_mode=ParseMode.MARKDOWN_V2)
-        await context.bot.send_message(chat_id="940229605", text = bulletin.title ) # 超連結 怎麼做?
-        await context.bot.send_message(chat_id="6904184189", text = bulletin.title ) # 超連結 怎麼做?
-
-    bulletin_manager.update_bulletin_status()
-
+    new_bulletins = bulletin_manager.get_unsent_bulletins()
+    for bulletin in new_bulletins:
+        topic = bulletin['topic']
+        subscribers = subscription_manager.get_subscribers_by_topic(topic)
+        print(f"Sending bulletin: {bulletin['title']} to subscribers of {topic}")
+        # await context.bot.send_message(
+        #     chat_id="940229605",
+        #     text=f'<a href="{bulletin["url"]}">{bulletin["title"]}</a>',
+        #     parse_mode='HTML'
+        # )
+        text1 = bulletin['topic'] + bulletin['title']
+        await context.bot.send_message(chat_id="940229605", text=text1)
+        ## Markdown Escape
+        # await context.bot.send_message(
+        #     chat_id="940229605",
+        #     text=f'[{safe_title}]({safe_url})',
+        #     parse_mode='Markdown'
+        # )
+        for user in subscribers:
+            await context.bot.send_message(chat_id=user['chatid'], text=bulletin['title'])
+        bulletin['sendstatus'] = True
+        bulletin_manager.update_bulletin(bulletin)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_manager = UserManager(db_config)
@@ -86,17 +90,22 @@ async def list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.effective_message.reply_text(response_text)
 
-async def llm(context: ContextTypes.DEFAULT_TYPE) -> None :
-    # 从 job context 中获取 chat_id
-    # chat_id = job.context
-    # 分類完 
-    broker.push_message('午餐','好吃')
-    # 取得消息
-    users = broker.get_message()
-    # 傳送 
-    for user  in users :
-        # self.memory.append({'chatid':f'{user}','topic_name':f'{topic}','message':f'{message}'})
-        await context.bot.send_message(chat_id=user['chatid'], text=f"[{user['topic_name']}][{user['message']}]")
 
-
-
+async def llm(context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        bulletin_manager = BulletinManager(db_config)
+        unclassified_bulletins = bulletin_manager.get_unclassified_bulletins()
+        for bulletin in unclassified_bulletins:
+            title = bulletin.get('title', '')
+            # 檢查並提取【】中的分類
+            try:
+                topic = title.split('【')[1].split('】')[0]
+                bulletin['topic'] = topic
+                print(topic)
+            except Exception as e:
+                bulletin['topic'] = "N/A"
+                print(f"更新分類時發生錯誤: {str(e)}")
+            
+            bulletin_manager.update_bulletin(bulletin)
+    except Exception as e:
+        print(f"執行 llm 函數時發生錯誤: {str(e)}")
