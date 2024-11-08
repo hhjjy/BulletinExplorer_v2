@@ -33,16 +33,16 @@ import json, os, requests, psycopg2, traceback, time, telegram, copy, pprint, as
 main_method = {
     # main 
     "台科大語言中心": "https://lc.ntust.edu.tw/app/index.php?Action=mobilercglist",
-    # "台科大教務處": "https://www.academic.ntust.edu.tw/p/403-1048-1405-1.php?Lang=zh-tw",
-    # "台科大主計室": "https://www.accounting.ntust.edu.tw/p/403-1067-1-1.php?Lang=zh-tw",
-    # "台科大電子計算中心": "https://www.cc.ntust.edu.tw/p/403-1050-1426-1.php?Lang=zh-tw",
-    # "台科大產學營運處": "https://iac.ntust.edu.tw/p/403-1061-1147-1.php?Lang=zh-tw",
-    # "台科大主校網": "https://www.ntust.edu.tw/p/403-1000-168-1.php?Lang=zh-tw",
-    # "台科大國際事務處": "https://www.oia.ntust.edu.tw/p/403-1060-1-1.php?Lang=zh-tw",
-    # "台科大研發處": "https://www.rd.ntust.edu.tw/p/403-1055-19-1.php?Lang=zh-tw",
-    # "台科大秘書室": "https://www.secretariat.ntust.edu.tw/p/403-1063-2-1.php?Lang=zh-tw",
-    # "台科大環安室": "https://she.ntust.edu.tw/p/403-1068-1497-1.php?Lang=zh-tw",
-    # "台科大學務處": "https://student.ntust.edu.tw/p/403-1053-1435-1.php?Lang=zh-tw",
+    "台科大教務處": "https://www.academic.ntust.edu.tw/p/403-1048-1405-1.php?Lang=zh-tw",
+    "台科大主計室": "https://www.accounting.ntust.edu.tw/p/403-1067-1-1.php?Lang=zh-tw",
+    "台科大電子計算中心": "https://www.cc.ntust.edu.tw/p/403-1050-1426-1.php?Lang=zh-tw",
+    "台科大產學營運處": "https://iac.ntust.edu.tw/p/403-1061-1147-1.php?Lang=zh-tw",
+    "台科大主校網": "https://www.ntust.edu.tw/p/403-1000-168-1.php?Lang=zh-tw",
+    "台科大國際事務處": "https://www.oia.ntust.edu.tw/p/403-1060-1-1.php?Lang=zh-tw",
+    "台科大研發處": "https://www.rd.ntust.edu.tw/p/403-1055-19-1.php?Lang=zh-tw",
+    "台科大秘書室": "https://www.secretariat.ntust.edu.tw/p/403-1063-2-1.php?Lang=zh-tw",
+    "台科大環安室": "https://she.ntust.edu.tw/p/403-1068-1497-1.php?Lang=zh-tw",
+    "台科大學務處": "https://student.ntust.edu.tw/p/403-1053-1435-1.php?Lang=zh-tw",
     "台科大臺巴計畫辦公室": "https://uptp-office.ntust.edu.tw/p/403-1116-2155-1.php?Lang=zh-tw",}
 
 headers = {

@@ -30,7 +30,7 @@ class BulletinManager(DatabaseManager):
         return [Bulletin(**row) for row in data]
 
     def get_unsent_bulletins(self) -> List[Dict[str, Any]]:
-        query = "SELECT * FROM bulletin WHERE sendstatus = FALSE"
+        query = "SELECT * FROM bulletin WHERE sendstatus = FALSE AND topic IS NOT NULL;"
         results = self.execute_query(query)
         return results  # 假設結果是列表的字典
 
