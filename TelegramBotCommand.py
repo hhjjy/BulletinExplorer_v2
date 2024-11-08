@@ -24,11 +24,12 @@ async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None:
         topic = bulletin['topic']
         subscribers = subscription_manager.get_subscribers_by_topic(topic)
         print(f"Sending bulletin: {bulletin['title']} to subscribers of {topic}")
-        await context.bot.send_message(
-            chat_id="940229605",
-            text=f'<a href="{bulletin["url"]}">{bulletin["title"]}</a>',
-            parse_mode='HTML'
-        )
+        # await context.bot.send_message(
+        #     chat_id="940229605",
+        #     text=f'<a href="{bulletin["url"]}">{bulletin["title"]}</a>',
+        #     parse_mode='HTML'
+        # )
+        await context.bot.send_message(chat_id="940229605", text=bulletin['title'])
         ## Markdown Escape
         # await context.bot.send_message(
         #     chat_id="940229605",
@@ -100,8 +101,10 @@ async def llm(context: ContextTypes.DEFAULT_TYPE) -> None:
                 topic = title.split('【')[1].split('】')[0]
                 bulletin['topic'] = topic
                 print(topic)
-                bulletin_manager.update_bulletin(bulletin)
             except Exception as e:
+                bulletin['topic'] = "N/A"
                 print(f"更新分類時發生錯誤: {str(e)}")
+            
+            bulletin_manager.update_bulletin(bulletin)
     except Exception as e:
         print(f"執行 llm 函數時發生錯誤: {str(e)}")

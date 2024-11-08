@@ -17,19 +17,36 @@ from Scraper import *
 from Broker import * 
 from TelegramBot import * 
 
+# main.py
+
 def SaveBulletin(data):
     bulletin_manager = BulletinManager(db_config)
-    for row in data:
-        #print(row)
-        bulletin_manager.save_bulletin(row)
+    try:
+        bulletin_manager.save_bulletin(data)
+        print(f"Successfully saved bulletin: {data['title']}")
+    except Exception as e:
+        print(f"儲存 {data['title']} 時發生錯誤：{e}")
 
+lock = asyncio.Lock()
 async def scrape(context: ContextTypes.DEFAULT_TYPE) -> None:
-    #should add running event
-    for web in ["台科大語言中心"]: # NTUST_INSIDE_URL, 
-        Scrape = ScraperFactory.get_scraper(web)
-        data = Scrape.scrape()
-        SaveBulletin(data)
+    async with lock:
+        tasks = []
+        for key in main_method:
+            Scrape = ScraperFactory.get_scraper(key)
+            tasks.append(asyncio.create_task(run_scrape(Scrape)))
+        try:
+            await asyncio.gather(*tasks)
+        except KeyboardInterrupt:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
 
+async def run_scrape(Scrape):
+    try:
+        async for data in Scrape.scrape():
+            SaveBulletin(data)  # 使用 await
+    except Exception as e:
+        print(f"在處理 {Scrape} 時發生錯誤：{e}")
 
 def main() -> None:
  
