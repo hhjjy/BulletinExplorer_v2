@@ -51,8 +51,8 @@ async def run_scrape(Scrape):
 def main() -> None:
  
     tgbot = TelegramBot("6588891089:AAETxqnSzmn7WBqBsHQ5tPcBYuiK36Dc1a8")
-    tgbot.repeat_job(send_new_data, 20, 10)
-    tgbot.repeat_job(scrape, 15, 3)
+    tgbot.repeat_job(send_new_data, 5, 10)
+    tgbot.repeat_job(scrape, 90, 3)
     tgbot.repeat_job(llm, interval=15, first=3)
 
 

@@ -29,7 +29,8 @@ async def send_new_data(context: ContextTypes.DEFAULT_TYPE) -> None:
         #     text=f'<a href="{bulletin["url"]}">{bulletin["title"]}</a>',
         #     parse_mode='HTML'
         # )
-        await context.bot.send_message(chat_id="940229605", text=bulletin['title'])
+        text1 = bulletin['topic'] + bulletin['title']
+        await context.bot.send_message(chat_id="940229605", text=text1)
         ## Markdown Escape
         # await context.bot.send_message(
         #     chat_id="940229605",

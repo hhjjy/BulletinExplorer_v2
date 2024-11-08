@@ -27,9 +27,6 @@ import json, os, requests, psycopg2, traceback, time, telegram, copy, pprint, as
     # "台科大永續發展與校務研究中心": "https://po.ntust.edu.tw/p/403-1059-763-1.php?Lang=zh-tw",
 
 
-
-
-   
 main_method = {
     # main 
     "台科大語言中心": "https://lc.ntust.edu.tw/app/index.php?Action=mobilercglist",
